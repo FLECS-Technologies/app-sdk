@@ -1,0 +1,26 @@
+{
+    "_schemaVersion": "2.0.0",
+    "app": "##APP##",
+    "version": "##VERSION##",
+    "revision": "0",
+    "image": "flecs.azurecr.io/##APP##",
+    "multiInstance": false,
+    "editor": "",
+    "args": [
+        "--launch-arg-1",
+        "--launch-arg-2=8000"
+    ],
+    "capabilities": [],
+    "conffiles": [],
+    "devices": [],
+    "env": [
+        "MY_ENV=value"
+    ],
+    "interactive": false,
+    "ports": [
+        "12345:12345"
+    ],
+    "volumes": [
+        "my-app-etc:/etc/my-app"
+    ]
+}
