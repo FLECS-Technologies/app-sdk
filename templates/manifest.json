@@ -11,8 +11,12 @@
         "--launch-arg-2=8000"
     ],
     "capabilities": [],
-    "conffiles": [],
-    "devices": [],
+    "conffiles": [
+        "default.conf:/etc/my-app/default.conf"
+    ],
+    "devices": [
+        "/dev/net/tun"
+    ],
     "env": [
         "MY_ENV=value"
     ],

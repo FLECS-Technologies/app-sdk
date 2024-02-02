@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/FLECS-Technologies/app-sdk/main/manifest.schema.json",
+  "title": "FLECS App Manifest",
+  "description": "",
+  "type": "object",
+  "properties": {
+    "_schemaVersion": {
+      "description": "Version of the implemented FLECS App Manifest schema",
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "examples": [
+        "2.0.0",
+        "3.0.0-beta.1"
+      ],
+      "$comment": "https://regex101.com/r/y9GIZD/1"
+    },
+    "app": {
+      "description": "Unique App identifier in reverse domain name notation",
+      "type": "string",
+      "pattern": "^((?:[a-z])+[a-z0-9.\\-_]+[a-z0-9])$",
+      "examples": [
+        "tech.flecs.flunder",
+        "io.anyviz.cloudadapter",
+        "com.example.some-app"
+      ],
+      "$comment": "https://regex101.com/r/psUZll/1"
+    },
+    "version": {
+      "description": "App version, naturally sortable",
+      "type": "string",
+      "examples": [
+        "1.0.0",
+        "2022-12",
+        "v3.14.159-alpha.2",
+        "version 21"
+      ]
+    },
+    "revision": {
+      "description": "App manifest revision. Increment if Manifest is changed within the same App version",
+      "type": "string",
+      "examples": [
+        "0",
+        "1",
+        "2"
+      ]
+    },
+    "image": {
+      "description": "Docker image for the App",
+      "type": "string",
+      "pattern": "^((?:(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])(?:\\.(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]))*|\\[(?:[a-fA-F0-9:]+)\\])(?::[0-9]+)?\/)?[a-z0-9]+(?:(?:[._]|__|[-]+)[a-z0-9]+)*(?:\/[a-z0-9]+(?:(?:[._]|__|[-]+)[a-z0-9]+)*)*)(?::([\\w][\\w.-]{0,127}))?(?:@([A-Za-z][A-Za-z0-9]*(?:[-_+.][A-Za-z][A-Za-z0-9]*)*[:][[:xdigit:]]{32,}))?$",
+      "examples": [
+        "flecs/tech.flecs.flunder",
+        "flecs.azurecr.io/io.anyviz.cloudadapter",
+        "registry.example.com/some-app",
+        "debian:bookworm-slim"
+      ],
+      "$comment": "https://regex101.com/r/EkbfNE/1"
+    },
+    "multiInstance": {
+      "description": "'true' if App can be instantiated more than once (requires no editor, no ports)",
+      "type": "boolean",
+      "examples": [
+        true,
+        false
+      ]
+    },
+    "editor": {
+      "description": "Port of App's web-based ui",
+      "type": "string",
+      "pattern": "^:([6][5][5][3][0-5]|[6][5][5][0-2][0-9]|[6][5][0-4][0-9]{2}|[6][0-4][0-9]{3}|[1-5][0-9]{4}|[1-9][0-9]{0,3})$",
+      "examples": [
+        ":8080",
+        ":3001",
+        ":18051"
+      ],
+      "$comment": "https://regex101.com/r/zRLOAm/1"
+    },
+    "args": {
+      "description": "Command line arguments passed to App entrypoint",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "examples": [
+        [
+          "--launch-arg1",
+          "--launch-arg2=value"
+        ]
+      ]
+    },
+    "capabilities": {
+      "description": "Permissions required for the App to function correctly",
+      "type": "array",
+      "items": {
+        "enum": [
+          "DOCKER",
+          "NET_ADMIN",
+          "SYS_NICE"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "conffiles": {
+      "description": "Configuration files used by the App",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "(^[^\/:]+):([^:]+)(?:$|:(r[ow]$))",
+        "examples": [
+          [
+            "default.conf:/etc/my-app/default.conf",
+            "default.conf:/etc/my-app/default.conf:rw",
+            "default.conf:/etc/my-app/default.conf:ro"
+          ]
+        ]
+      },
+      "$comment": "https://regex101.com/r/hLwDoP/1"
+    },
+    "devices": {
+      "description": "Devices passed through to the App instances",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(\/dev\/.+)$",
+        "examples": [
+          [
+            "/dev/net/tun"
+          ]
+        ]
+      },
+      "$comment": "https://regex101.com/r/6utwD1/1"
+    },
+    "env": {
+      "description": "Environment variables for the App instances",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z]+(?:[a-zA-Z0-9_\\-\\.])*=.+$",
+        "examples": [
+          [
+            "MY_ENV=value",
+            "tech.flecs.some-app_value=any"
+          ]
+        ]
+      },
+      "$comment": "https://regex101.com/r/MNDmTF/1"
+    },
+    "interactive": {
+      "description": "DEPRECATED: true if App requires allocation of an interactive shell",
+      "type": "boolean",
+      "deprecated": true
+    },
+    "ports": {
+      "description": "Port mappings for the App's instances (not allowed for multiInstance Apps)",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(?:(?:([6][5][5][3][0-5]|[6][5][5][0-2][0-9]|[6][5][0-4][0-9]{2}|[6][0-4][0-9]{3}|[1-5][0-9]{4}|[1-9][0-9]{0,3})(?:$|-([6][5][5][3][0-5]|[6][5][5][0-2][0-9]|[6][5][0-4][0-9]{2}|[6][0-4][0-9]{3}|[1-5][0-9]{4}|[1-9][0-9]{0,3}):?|:)|:(?=.+)))(?:([6][5][5][3][0-5]|[6][5][5][0-2][0-9]|[6][5][0-4][0-9]{2}|[6][0-4][0-9]{3}|[1-5][0-9]{4}|[1-9][0-9]{0,3})?(?:$|-([6][5][5][3][0-5]$|[6][5][5][0-2][0-9]$|[6][5][0-4][0-9]{2}$|[6][0-4][0-9]{3}$|[1-5][0-9]{4}$|[1-9][0-9]{0,3}$))?)",
+        "examples": [
+          [
+            "8001:8001",
+            "5000",
+            "5001-5008:6001-6008",
+            "6001-6008"
+          ]
+        ]
+      },
+      "$comment": "https://regex101.com/r/XjrmaY/1"
+    },
+    "volumes": {
+      "description": "Virtual volumes and bind mounts for an App's instances",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "(?:^([a-zA-Z0-9\\-_.]+)|^\/[a-zA-Z0-9\\-_.\/]+):([a-zA-Z0-9\\-_.\/]+)$",
+        "examples": [
+          [
+            "my-app-etc:/etc/my-app",
+            "/etc/my-app:/etc/my-app"
+          ]
+        ],
+        "$comment": "https://regex101.com/r/WjJro3/1"
+      }
+    }
+  },
+  "required": [
+    "app",
+    "version",
+    "image"
+  ]
+}
