@@ -1,4 +1,5 @@
 {
+    "$schema": "https://raw.githubusercontent.com/FLECS-Technologies/app-sdk/main/manifest.schema.json",
     "_schemaVersion": "2.0.0",
     "app": "##APP##",
     "version": "##VERSION##",
