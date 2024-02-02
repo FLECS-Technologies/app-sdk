@@ -21,7 +21,6 @@
     "env": [
         "MY_ENV=value"
     ],
-    "interactive": false,
     "ports": [
         "12345:12345"
     ],
