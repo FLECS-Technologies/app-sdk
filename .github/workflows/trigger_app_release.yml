@@ -1,0 +1,38 @@
+name: trigger_app_release.yml
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: Name of the app in reverse domain notation
+        required: true
+        type: string
+      release-tag:
+        description: Tag of the release in the apps repository
+        required: true
+        type: string
+      app-version:
+        description: Released version of the app
+        required: true
+        type: string
+    secrets:
+      APP_RELEASE_TOKEN:
+        description: Token that provides access to trigger the release
+        required: true
+env:
+  APP_NAME: ${{ inputs.app-name }}
+  RELEASE_TAG: ${{ inputs.release-tag }}
+  APP_VERSION: ${{ inputs.app-version }}
+jobs:
+  trigger-release-process:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST trigger
+        run: |
+          echo "Triggering app release for $APP_NAME in version $APP_VERSION on $RELEASE_TAG"
+          curl -v -L \
+          -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.APP_RELEASE_TOKEN }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          https://api.github.com/repos/FLECS-Technologies/flecs-apps/actions/workflows/app_release.yml/dispatches \
+          -d '{"ref":"main","inputs":{"release-tag": "'"$RELEASE_TAG"'", "app-version": "'"$APP_VERSION"'", "app-name": "'"$APP_NAME"'"}}'
