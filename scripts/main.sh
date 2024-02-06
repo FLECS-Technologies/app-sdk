@@ -41,7 +41,7 @@ for VARIANT in "${VARIANTS[@]}"; do
   fi
 
   if [ "${PUSH_DOCKER}" = "true" ]; then
-    source ${DIRNAME}/scripts/docker-push.sh
+    source ${DIRNAME}/scripts/push-docker-image.sh
   fi
 
   if [ "${PUSH_MANIFEST}" = "true" ]; then

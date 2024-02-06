@@ -13,7 +13,9 @@
     ],
     "capabilities": [],
     "conffiles": [
-        "default.conf:/etc/my-app/default.conf"
+        "default.conf:/etc/my-app/default.conf",
+        "default.conf:/etc/my-app/default.conf:ro",
+        "default.conf:/etc/my-app/default.conf:rw"
     ],
     "devices": [
         "/dev/net/tun"
@@ -25,6 +27,7 @@
         "12345:12345"
     ],
     "volumes": [
-        "my-app-etc:/etc/my-app"
+        "my-app-etc:/etc/my-app",
+        "/var/lib/my-app:/var/lib/my-app"
     ]
 }
