@@ -8,7 +8,7 @@ for archive in `find ${BUILD_CONTEXT}/out/${APP}${SUFFIX}/${VERSION} -name "*.ta
   DOCKER_IMAGE=$(docker load --quiet --input ${archive} | cut -f2- -d ':')
   run docker login --username ${DOCKER_USER} --password ${DOCKER_PASSWORD} ${DOCKER_IMAGE} >/dev/null
   DOCKER_IMAGES="${DOCKER_IMAGES} ${DOCKER_IMAGE}"
-  echo "Pusing ${DOCKER_IMAGE}..."
+  echo "Pushing ${DOCKER_IMAGE}..."
   while ! docker push ${DOCKER_IMAGE}; do sleep 1; done
 done;
 DOCKER_IMAGES=`echo ${DOCKER_IMAGES} | sed 's/  / /g'`
