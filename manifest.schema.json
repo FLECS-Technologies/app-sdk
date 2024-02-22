@@ -96,7 +96,8 @@
         "enum": [
           "DOCKER",
           "NET_ADMIN",
-          "SYS_NICE"
+          "SYS_NICE",
+          "IPC_LOCK"
         ]
       },
       "uniqueItems": true
