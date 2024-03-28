@@ -10,7 +10,27 @@ for VARIANT in "${VARIANTS[@]}"; do
     continue
   fi
   SUFFIX=${VARIANT:+-${VARIANT}}
-  PLATFORMS=$(cat ${BUILD_CONTEXT}/docker/Docker.${VARIANT:+${VARIANT}.}platforms)
+
+  # Look for platform-specific Docker.${VARIANT}.platforms
+  PLATFORM_FILE="${BUILD_CONTEXT}/docker/Docker.${VARIANT:+${VARIANT}.}platforms"
+  echo -n "Checking for ${PLATFORM_FILE} ... "
+  if [ ! -f "${PLATFORM_FILE}" ]; then
+    echo "no"
+    PLATFORM_FILE="${BUILD_CONTEXT}/docker/Docker.platforms"
+    echo -n "Checking for ${PLATFORM_FILE} ... "
+    # Use platform-independent Docker.platforms as fallback
+    if [ ! -f "${PLATFORM_FILE}" ]; then
+      echo "no"
+      echo "fatal: no usable Docker.platforms file found" 1>&1
+      exit 1
+    else
+      echo "yes"
+    fi
+  else
+    echo "yes"
+  fi
+
+  PLATFORMS=$(cat ${PLATFORM_FILE})
   OUT_DIR=${BUILD_CONTEXT}/out/${APP}${SUFFIX}/${VERSION}
   mkdir -p ${OUT_DIR}
 
