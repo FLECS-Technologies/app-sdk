@@ -184,6 +184,21 @@
         ],
         "$comment": "https://regex101.com/r/WjJro3/1"
       }
+    },
+    "labels": {
+      "description": "Labels for the App instances",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z](?:(?:[\\-\\.]?[a-zA-Z0-9])*[\\-\\.]?[a-z])?(?:=.*)?$",
+        "examples": [
+          [
+            "tech.flecs",
+            "tech.flecs.some-label=Some custom label value"
+          ]
+        ]
+      },
+      "$comment": "https://regex101.com/r/xOiJXu/1"
     }
   },
   "required": [
