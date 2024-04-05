@@ -29,5 +29,9 @@
     "volumes": [
         "my-app-etc:/etc/my-app",
         "/var/lib/my-app:/var/lib/my-app"
+    ],
+    "labels": [
+        "org.my.label",
+        "org.my.label-with-value=Some custom label value"
     ]
 }
