@@ -97,7 +97,8 @@
           "DOCKER",
           "NET_ADMIN",
           "SYS_NICE",
-          "IPC_LOCK"
+          "IPC_LOCK",
+          "NET_RAW"
         ]
       },
       "uniqueItems": true
