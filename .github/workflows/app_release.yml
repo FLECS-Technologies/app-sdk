@@ -1,0 +1,56 @@
+name: "App release"
+on:
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        description: Tag of the release in the apps repository
+        required: true
+        type: string
+      app-version:
+        description: Released version of the app
+        required: true
+        type: string
+jobs:
+  upload_app_image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine APP_NAME from ${{ github.repository }}
+        id: determine-app-name
+        run: |
+          echo APP_NAME=$(echo "${{ github.repository }}" | sed -nE 's/.*apps-(.+)$/\1/p') >> $GITHUB_OUTPUT
+      - name: Checkout app-sdk for build script
+        uses: actions/checkout@v4
+        with:
+          repository: FLECS-Technologies/app-sdk
+          path: app-sdk
+          ref: main
+      - name: Checkout app repo for building ${{ steps.determine-app-name.outputs.APP_NAME }}
+        uses: actions/checkout@v4
+        with:
+          path: ${{ steps.determine-app-name.outputs.APP_NAME }}
+          ref: ${{ inputs.release-tag }}
+      - name: Setup Docker buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+      - name: Build and publish app image with build script
+        env:
+          DOCKER_USER: ${{ vars.FLECS_REGISTRY_TOKEN }}
+          DOCKER_PASSWORD: ${{ secrets.FLECS_REGISTRY_PASSWORD }}
+          PRIVATE_REGISTRY: ${{ vars.PRIVATE_REGISTRY }}
+          PRIVATE_REGISTRY_USER: ${{ vars.PRIVATE_REGISTRY_USER }}
+          PRIVATE_REGISTRY_PASSWORD: ${{ secrets.PRIVATE_REGISTRY_PASSWORD }}
+        run: |
+          app-sdk/build-app.sh \
+            --app ${{ steps.determine-app-name.outputs.APP_NAME }} \
+            --version ${{ github.event.release.tag_name }} \
+            --push \
+            --image-only
+  trigger-app-release:
+    needs: [ upload_app_image ]
+    uses: FLECS-Technologies/app-sdk/.github/workflows/trigger_app_release.yml@main
+    with:
+      release-tag: ${{ inputs.release-tag }}
+      app-version: ${{ inputs.app-version }}
+    secrets:
+      APP_RELEASE_TOKEN: ${{ secrets.APP_RELEASE_TOKEN }}
