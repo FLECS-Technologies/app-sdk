@@ -2,10 +2,6 @@ name: trigger_app_release.yml
 on:
   workflow_call:
     inputs:
-      app-repo:
-        description: Github repository of the App (as provided by github.repository)
-        required: true
-        type: string
       release-tag:
         description: Tag of the release in the apps repository
         required: true
@@ -19,16 +15,15 @@ on:
         description: Token that provides access to trigger the release
         required: true
 env:
-  APP_REPO: ${{ inputs.app-repo }}
   RELEASE_TAG: ${{ inputs.release-tag }}
   APP_VERSION: ${{ inputs.app-version }}
 jobs:
   trigger-release-process:
     runs-on: ubuntu-latest
     steps:
-      - name: Determine APP_NAME from APP_REPO
+      - name: Determine APP_NAME from ${{ github.repository }}
         run: |
-          echo APP_NAME=$(echo "${APP_REPO}" | sed -nE 's/.*apps-(.+)$/\1/p') >> $GITHUB_ENV
+          echo APP_NAME=$(echo "${{ github.repository }}" | sed -nE 's/.*apps-(.+)$/\1/p') >> $GITHUB_ENV
       - name: POST trigger
         run: |
           echo "Triggering app release for $APP_NAME in version $APP_VERSION on $RELEASE_TAG"

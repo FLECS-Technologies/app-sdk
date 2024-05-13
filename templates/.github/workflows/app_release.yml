@@ -4,11 +4,9 @@ on:
     types:
       - released
 jobs:
-  trigger-app-release:
-    uses: FLECS-Technologies/app-sdk/.github/workflows/trigger_app_release.yml@main
+  app-release:
+    uses: FLECS-Technologies/app-sdk/.github/workflows/app_release.yml@main
+    secrets: inherit
     with:
-      app-repo: ${{ github.repository }}
       release-tag: ${{ github.event.release.tag_name }}
       app-version: ${{ github.event.release.tag_name }}
-    secrets:
-      APP_RELEASE_TOKEN: ${{ secrets.APP_RELEASE_TOKEN }}
