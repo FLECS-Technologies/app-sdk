@@ -15,6 +15,16 @@
       ],
       "$comment": "https://regex101.com/r/y9GIZD/1"
     },
+    "_minimumFlecsVersion": {
+      "description": "Minimum FLECS version needed for the app",
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "examples": [
+        "2.0.0",
+        "3.0.0-beta.1"
+      ],
+      "$comment": "https://regex101.com/r/y9GIZD/1"
+    },
     "app": {
       "description": "Unique App identifier in reverse domain name notation",
       "type": "string",
