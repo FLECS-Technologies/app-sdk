@@ -75,16 +75,41 @@
         false
       ]
     },
-    "editor": {
-      "description": "Port of App's web-based ui",
-      "type": "string",
-      "pattern": "^:([6][5][5][3][0-5]|[6][5][5][0-2][0-9]|[6][5][0-4][0-9]{2}|[6][0-4][0-9]{3}|[1-5][0-9]{4}|[1-9][0-9]{0,3})$",
+    "editors": {
+      "description": "Set of web-based UIs of the app",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "port": {
+            "description": "Port on which the editor is reachable on the docker container",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "supportsReverseProxy": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": ["name", "port"]
+      },
       "examples": [
-        ":8080",
-        ":3001",
-        ":18051"
-      ],
-      "$comment": "https://regex101.com/r/zRLOAm/1"
+        [
+          {
+            "name": "Example config UI",
+            "port": 5678,
+            "supportsReverseProxy": false
+          },
+          {
+            "name:": "Example log UI",
+            "port": 7890
+          }
+        ]
+      ]
     },
     "args": {
       "description": "Command line arguments passed to App entrypoint",
