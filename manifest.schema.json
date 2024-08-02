@@ -237,6 +237,7 @@
     }
   },
   "required": [
+    "_schemaVersion",
     "app",
     "version",
     "image"
