@@ -108,7 +108,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "pattern": "(^[^\/:]+):([^:]+)(?:$|:(r[ow]$))",
+        "pattern": "(^[^\/:]+):([^:]+)(?:$|:(r[ow](?:,(?:no_)?init$|)$|(?:no_)?init)$)",
         "examples": [
           [
             "default.conf:/etc/my-app/default.conf",
@@ -117,7 +117,7 @@
           ]
         ]
       },
-      "$comment": "https://regex101.com/r/hLwDoP/1"
+      "$comment": "https://regex101.com/r/0LtIRV/1"
     },
     "devices": {
       "description": "Devices passed through to the App instances",
