@@ -68,13 +68,13 @@
     "editor": {
       "description": "Port of App's web-based ui",
       "type": "string",
-      "pattern": "^:([6][5][5][3][0-5]|[6][5][5][0-2][0-9]|[6][5][0-4][0-9]{2}|[6][0-4][0-9]{3}|[1-5][0-9]{4}|[1-9][0-9]{0,3})$",
+      "pattern": "^(?::([6][5][5][3][0-5]|[6][5][5][0-2][0-9]|[6][5][0-4][0-9]{2}|[6][0-4][0-9]{3}|[1-5][0-9]{4}|[1-9][0-9]{0,3}))?$",
       "examples": [
         ":8080",
         ":3001",
         ":18051"
       ],
-      "$comment": "https://regex101.com/r/zRLOAm/1"
+      "$comment": "https://regex101.com/r/zRLOAm/2"
     },
     "args": {
       "description": "Command line arguments passed to App entrypoint",
