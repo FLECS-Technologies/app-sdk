@@ -138,15 +138,16 @@
       "type": "array",
       "items": {
         "type": "string",
-        "pattern": "^[a-zA-Z]+(?:[a-zA-Z0-9_\\-\\.])*=.+$",
+        "pattern": "^[a-zA-Z]+(?:[a-zA-Z0-9_\\-\\.])*=.*$",
         "examples": [
           [
+            "EMPTY_ENV=",
             "MY_ENV=value",
             "tech.flecs.some-app_value=any"
           ]
         ]
       },
-      "$comment": "https://regex101.com/r/MNDmTF/1"
+      "$comment": "https://regex101.com/r/lv1gKP/1"
     },
     "interactive": {
       "description": "DEPRECATED: true if App requires allocation of an interactive shell",
