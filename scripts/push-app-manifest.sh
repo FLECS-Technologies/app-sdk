@@ -7,8 +7,8 @@ if ! command -v az &>/dev/null; then
 fi
 
 run ${AZ} login --service-principal --username ${AZ_CLIENT_ID} --tenant ${AZ_TENANT_ID} --password ${AZ_CLIENT_SECRET} >/dev/null
-for manifest in `find ${BUILD_CONTEXT}/out/${APP}/${VERSION} -name "manifest.json"`; do
-  run ${AZ} storage blob upload --auth-mode login --account-name flecs --container-name flecs-apps --name ${APP}/${VERSION}/$(basename ${manifest}) --file ${manifest} --overwrite
+for manifest in `find ${BUILD_CONTEXT}/out/${APP}*/${VERSION} -name "manifest.json"`; do
+  run ${AZ} storage blob upload --auth-mode login --account-name flecs --container-name flecs-apps --name $(realpath -s --relative-to=${BUILD_CONTEXT}/out ${manifest}) --file ${manifest} --overwrite
 done;
 ${AZ} logout
 if [ "${CONTAINER_ID}" != "" ]; then
