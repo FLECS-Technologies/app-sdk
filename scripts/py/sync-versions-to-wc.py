@@ -38,8 +38,10 @@ def versions_and_archs_from_repo(app):
     try:
         repo = Repo(app)
         for tag in repo.tags:
+            print("Processing tag {}".format(tag))
             platforms = tag.repo.tree()["docker/Docker.platforms"]
             line = platforms.data_stream.read().decode().rstrip()
+            print("Processing line {}".format(line))
             for arch in line.split(","):
                 archs.add(docker_to_arch(arch))
             versions.add(tag.name)
