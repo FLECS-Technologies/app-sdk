@@ -178,8 +178,11 @@ def main(argv):
         )
     )
     if len(apps) == 0:
-        print("Found no product matching App {}".format(args.app))
-        exit(1)
+        print(
+            "Warning: Found no product matching App {}".format(args.app),
+            file=sys.stderr,
+        )
+        exit(0)
 
     print("ids:\n\t{}".format("\n\t".join(str(app["id"]) for app in apps)))
 
