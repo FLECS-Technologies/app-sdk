@@ -48,7 +48,6 @@ def versions_and_archs_from_repo(app):
             version_arch_matrix.add("{}:{}".format(tag, ",".join(sorted(archs))))
     except Exception:
         print("Could not determine versions and archs for {}".format(app))
-        None
 
     return [sorted(archs), natsorted(versions), natsorted(version_arch_matrix)]
 
@@ -158,13 +157,14 @@ def main(argv):
     # faster than retrieving all Apps through the WooCommerce REST API
     print("Parsing versions and architectures from Git repository...")
     archs, versions, version_arch_matrix = versions_and_archs_from_repo(args.app)
+    assert len(versions) == len(version_arch_matrix)  # bug check...
+
+    if len(versions) == 0:
+        print("Found no versions for App {}".format(args.app), file=sys.stderr)
+        exit(0)
     if len(archs) == 0:
         print("Found no architectures for App {}".format(args.app), file=sys.stderr)
         exit(1)
-    if len(versions) == 0:
-        print("Found no versions for App {}".format(args.app), file=sys.stderr)
-        exit(1)
-    assert len(versions) == len(version_arch_matrix)  # bug check...
 
     print("archs:\n\t{}".format("\n\t".join(archs)))
     print("versions:\n\t{}".format("\n\t".join(versions)))
