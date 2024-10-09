@@ -203,6 +203,11 @@
         ]
       },
       "$comment": "https://regex101.com/r/xOiJXu/1"
+    },
+    "hostname": {
+      "description": "DEPRECATED: hostname of the started app, using this with multiInstance = true will cause problems",
+      "type": "string",
+      "deprecated": true
     }
   },
   "required": [
