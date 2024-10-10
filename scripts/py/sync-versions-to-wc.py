@@ -15,6 +15,7 @@ def parse_args(argv):
     )
     parser.add_argument("--app", required=True)
     parser.add_argument("--base-url", required=False, default="staging.flecs.tech")
+    parser.add_argument("--allow-no-product", required=False, action='store_true')
     args = parser.parse_args(argv)
     if args.app[-1] == "/":
         args.app = args.app[:-1]
@@ -181,6 +182,8 @@ def main(argv):
     )
     if len(apps) == 0:
         print("Found no product matching App {}".format(args.app))
+        if args.allow_no_product:
+            exit(0)
         exit(1)
 
     print("ids:\n\t{}".format("\n\t".join(str(app["id"]) for app in apps)))
