@@ -1,12 +1,18 @@
 import argparse
 import dotenv
-from git import Repo
+from git import Repo, TagReference
 from natsort import natsorted
 import os
 import json
+import re
 import requests
 import sys
 
+class AppRelease:
+    def __init__(self):
+        self.versions = set()
+        self.archs = set()
+        self.version_arch_matrix = set()
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(
@@ -32,25 +38,38 @@ def docker_to_arch(arch):
     raise ValueError("Invalid value {} for arch".format(arch))
 
 
-def versions_and_archs_from_repo(app):
-    archs = set()
-    versions = set()
-    version_arch_matrix = set()
+def variants_from_tag(tag: TagReference):
+    variants = set()
+    pattern = r"manifest\.?(.*)\.json"
+    for file in tag.repo.tree().blobs:
+        match = re.search(pattern, file.name)
+        if match:
+            variants.add(match.group(1))
+    return variants
+
+def releases_from_repo(app):
+    releases = dict()
     try:
         repo = Repo(app)
         for tag in repo.tags:
             print("Processing tag {}".format(tag))
-            platforms = tag.repo.tree()["docker/Docker.platforms"]
-            line = platforms.data_stream.read().decode().rstrip()
-            print("Processing line {}".format(line))
-            for arch in line.split(","):
-                archs.add(docker_to_arch(arch))
-            versions.add(tag.name)
-            version_arch_matrix.add("{}:{}".format(tag, ",".join(sorted(archs))))
-    except Exception:
-        print("Could not determine versions and archs for {}".format(app))
+            variants = variants_from_tag(tag)
 
-    return [sorted(archs), natsorted(versions), natsorted(version_arch_matrix)]
+            for variant in variants:
+                release = releases.setdefault(variant, AppRelease())
+                release.versions.add(tag.name)
+                try:
+                    platforms = tag.repo.tree()["docker/Docker.{}.platforms".format(variant)]
+                except:
+                    platforms = tag.repo.tree()["docker/Docker.platforms".format(variant)]
+                line = platforms.data_stream.read().decode().rstrip()
+                print("Processing line {}".format(line))
+                for raw_arch in line.split(","):
+                    release.archs.add(docker_to_arch(raw_arch))
+                release.version_arch_matrix.add("{}:{}".format(tag, ",".join(sorted(release.archs))))
+    except Exception as e:
+        print("Could not determine variants, versions and archs for {}: {}".format(app, e))
+    return releases
 
 
 def wc_apps(base_url):
@@ -156,61 +175,74 @@ def main(argv):
 
     # We'll check the App repository for everything we need first, as it's much
     # faster than retrieving all Apps through the WooCommerce REST API
-    print("Parsing versions and architectures from Git repository...")
-    archs, versions, version_arch_matrix = versions_and_archs_from_repo(args.app)
-    assert len(versions) == len(version_arch_matrix)  # bug check...
+    print("Parsing variants, versions and architectures from Git repository...")
+    no_products_found_counter = 0
+    error_count = 0
+    releases = releases_from_repo(args.app)
+    for variant, release in releases.items():
+        release.archs = sorted(release.archs)
+        release.versions = natsorted(release.versions)
+        release.version_arch_matrix = natsorted(release.version_arch_matrix)
+        print("variant {}:".format(variant))
+        print("\tarchs:\n\t\t{}".format("\n\t\t".join(release.archs)))
+        print("\tversions:\n\t\t{}".format("\n\t\t".join(release.versions)))
+        print("\tmatrix:\n\t\t{}".format("\n\t\t".join(release.version_arch_matrix)))
+    for variant, release in releases.items():
+        assert len(release.versions) == len(release.version_arch_matrix)  # bug check...
+        variant_name = args.app
+        if variant != "":
+            variant_name = "{}-{}".format(args.app, variant)
 
-    if len(versions) == 0:
-        print("Found no versions for App {}".format(args.app), file=sys.stderr)
-        exit(0)
-    if len(archs) == 0:
-        print("Found no architectures for App {}".format(args.app), file=sys.stderr)
-        exit(1)
+        if len(release.versions) == 0:
+            print("Found no versions for App {}".format(variant_name), file=sys.stderr)
+            continue
+        if len(release.archs) == 0:
+            print("Found no architectures for App {}".format(variant_name), file=sys.stderr)
+            error_count += 1
+            continue
 
-    print("archs:\n\t{}".format("\n\t".join(archs)))
-    print("versions:\n\t{}".format("\n\t".join(versions)))
-    print("matrix:\n\t{}".format("\n\t".join(version_arch_matrix)))
-
-    # Find all Apps with matching reverse domain name in WooCommerce. NOTE: There could
-    # be multiple Apps, as some Apps might be released in white-labeled stores w/different
-    # metadata, but identical App image
-    print("Matching WooCommerce products with reverse-domain-name")
-    apps = list(
-        filter(
-            lambda app: match_reverse_domain_name(app, args.app), wc_apps(args.base_url)
+        # Find all Apps with matching reverse domain name in WooCommerce. NOTE: There could
+        # be multiple Apps, as some Apps might be released in white-labeled stores w/different
+        # metadata, but identical App image
+        print("Matching WooCommerce products with {}".format(variant_name))
+        apps = list(
+            filter(
+                lambda app: match_reverse_domain_name(app, variant_name), wc_apps(args.base_url)
+            )
         )
-    )
-    if len(apps) == 0:
-        print("Found no product matching App {}".format(args.app))
-        if args.allow_no_product:
-            exit(0)
-        exit(1)
+        if len(apps) == 0:
+            print("Found no product matching App {}".format(variant_name))
+            no_products_found_counter += 1
+            continue
 
-    print("ids:\n\t{}".format("\n\t".join(str(app["id"]) for app in apps)))
+        print("ids:\n\t{}".format("\n\t".join(str(app["id"]) for app in apps)))
 
-    # Apply changes to all found Apps
-    # TODO: Should we really auto-update in white-labeled stores?
-    for app in apps:
-        product_id = app["id"]
-        app["attributes"] = patch_attributes(app["attributes"], archs, versions)
-        meta_data = build_meta_data(version_arch_matrix)
-        put_json = {"attributes": app["attributes"], "meta_data": meta_data}
+        # Apply changes to all found Apps
+        # TODO: Should we really auto-update in white-labeled stores?
+        for app in apps:
+            product_id = app["id"]
+            app["attributes"] = patch_attributes(app["attributes"], release.archs, release.versions)
+            meta_data = build_meta_data(release.version_arch_matrix)
+            put_json = {"attributes": app["attributes"], "meta_data": meta_data}
 
-        url = "https://{base_url}/wp-json/wc/v3/products/{id}".format(
-            base_url=args.base_url, id=product_id
-        )
-        print("Updating product {id} @{url}".format(id=product_id, url=url))
-        print(json.dumps(put_json, indent=2))
-        update_product = requests.put(
-            url=url,
-            headers={"User-Agent": "curl/8.4.0", "Content-Type": "application/json"},
-            auth=(
-                os.environ.get("WC_CONSUMER_KEY"),
-                os.environ.get("WC_CONSUMER_SECRET"),
-            ),
-            data=json.dumps(put_json),
-        )
-        print(update_product)
+            url = "https://{base_url}/wp-json/wc/v3/products/{id}".format(
+                base_url=args.base_url, id=product_id
+            )
+            print("Updating product {id} @{url}".format(id=product_id, url=url))
+            print(json.dumps(put_json, indent=2))
+            update_product = requests.put(
+                url=url,
+                headers={"User-Agent": "curl/8.4.0", "Content-Type": "application/json"},
+                auth=(
+                    os.environ.get("WC_CONSUMER_KEY"),
+                    os.environ.get("WC_CONSUMER_SECRET"),
+                ),
+                data=json.dumps(put_json),
+            )
+            print(update_product)
+    if no_products_found_counter > 0 and not args.allow_no_product:
+        exit(no_products_found_counter + error_count)
+    exit(error_count)
 
 
 if __name__ == "__main__":
