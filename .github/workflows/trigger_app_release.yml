@@ -27,7 +27,7 @@ jobs:
       - name: POST trigger
         run: |
           echo "Triggering app release for $APP_NAME in version $APP_VERSION on $RELEASE_TAG"
-          curl -v -L \
+          curl --fail-with-body -v -L \
           -X POST \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ secrets.APP_RELEASE_TOKEN }}" \
