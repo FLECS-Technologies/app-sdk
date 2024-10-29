@@ -29,6 +29,7 @@ jobs:
         with:
           path: ${{ steps.determine-app-name.outputs.APP_NAME }}
           ref: ${{ inputs.release-tag }}
+          submodules: recursive
       - name: Setup Docker buildx
         uses: docker/setup-buildx-action@v3
         with:
