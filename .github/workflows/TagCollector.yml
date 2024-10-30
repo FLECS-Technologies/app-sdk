@@ -1,7 +1,6 @@
 name: TagCollector
 
 on:
-  branches: autoprocess
   workflow_dispatch: # Manual Trigger
     inputs:
       repo_dir:
