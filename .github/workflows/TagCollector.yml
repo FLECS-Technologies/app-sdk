@@ -1,7 +1,17 @@
 name: TagCollector
 
 on:
-  workflow_dispatch: # Manual Trigger
+  workflow_dispatch: #Manual Trigger
+    inputs:
+      repo_dir:
+        description: "Repository Directory"
+        required: true
+        default: "./"
+      image_name:
+        description: "Docker Image Name"
+        required: false
+
+  workflow_call:  #Enables call from another workflow
     inputs:
       repo_dir:
         description: "Repository Directory"
