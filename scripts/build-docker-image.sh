@@ -9,6 +9,15 @@ DOCKERFILE="${BUILD_CONTEXT}/docker/Dockerfile${VARIANT:+.${VARIANT}}"
 if [ ! -f "${DOCKERFILE}" ]; then
   DOCKERFILE="${BUILD_CONTEXT}/docker/Dockerfile"
 fi
+if [ ! -f "${DOCKERFILE}" ]; then
+  if [ -f "${BUILD_CONTEXT}/docker/docker-compose.yml" ]; then
+    echo "*** Warning: No Dockerfile found, but docker-compose.yml. Skipping docker build." 1>&2
+    return 0
+  else
+    echo "*** Warning: No Dockerfile found, and no docker-compose.yml present." 1>&2
+    return 1
+  fi
+fi
 # Check if a private registry should be used and login if necessary
 if [ ! -z "${PRIVATE_REGISTRY}" ]; then
   run docker login --username ${PRIVATE_REGISTRY_USER} --password ${PRIVATE_REGISTRY_PASSWORD} ${PRIVATE_REGISTRY} >/dev/null
