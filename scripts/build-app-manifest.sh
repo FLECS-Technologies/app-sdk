@@ -12,7 +12,7 @@ run sed -i "s/##VERSION##/${VERSION}/g" "${APP_MANIFEST}"
 
 if [ -f "${BUILD_CONTEXT}/docker/docker-compose.yml" ]; then
     echo "Merging docker-compose.yml into manifest"
-    COMPOSE_YAML=$(cat ${BUILD_CONTEXT}/docker/docker-compose.yml | yq -c)
+    COMPOSE_YAML=$(cat ${BUILD_CONTEXT}/docker/docker-compose.yml | yq -o json -M)
     run jq ".deployment.compose |= . + ${COMPOSE_YAML}" "${APP_MANIFEST}" >${APP_MANIFEST}.merged
     run mv -f ${APP_MANIFEST}.merged ${APP_MANIFEST}
 fi
