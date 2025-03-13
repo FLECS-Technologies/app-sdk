@@ -11,8 +11,11 @@ on:
         required: true
         type: string
     secrets:
-      APP_RELEASE_TOKEN:
-        description: Token that provides access to trigger the release
+      FLECS_WORKFLOW_AUTOMATION_KEY:
+        description: GitHub App private key
+        required: true
+      FLECS_WORKFLOW_AUTOMATION_CLIENT_ID:
+        description: GitHub App client ID
         required: true
 env:
   RELEASE_TAG: ${{ inputs.release-tag }}
@@ -24,13 +27,28 @@ jobs:
       - name: Determine APP_NAME from ${{ github.repository }}
         run: |
           echo APP_NAME=$(echo "${{ github.repository }}" | sed -nE 's/.*apps-(.+)$/\1/p') >> $GITHUB_ENV
-      - name: POST trigger
-        run: |
-          echo "Triggering app release for $APP_NAME in version $APP_VERSION on $RELEASE_TAG"
-          curl --fail-with-body -v -L \
-          -X POST \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ secrets.APP_RELEASE_TOKEN }}" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          https://api.github.com/repos/FLECS-Technologies/flecs-apps/actions/workflows/app_release.yml/dispatches \
-          -d '{"ref":"main","inputs":{"release-tag": "'"$RELEASE_TAG"'", "app-version": "'"$APP_VERSION"'", "app-name": "'"$APP_NAME"'"}}'
+      - name: Issue GitHub App installation access token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.FLECS_WORKFLOW_AUTOMATION_CLIENT_ID }}
+          private-key: ${{ secrets.FLECS_WORKFLOW_AUTOMATION_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: flecs-apps
+      - name: Trigger App release workflow
+        uses: octokit/request-action@v2.x
+        with:
+          route: POST /repos/{owner}/{repo}/actions/workflows/app_release.yml/dispatches
+          owner: FLECS-Technologies
+          repo: flecs-apps
+          data: >
+            {
+              "ref": "main",
+              "inputs": {
+                "release-tag": "${{ env.RELEASE_TAG }}",
+                "app-version": "${{ env.APP_VERSION }}",
+                "app-name": "${{ env.APP_NAME }}"
+                }
+            }
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}

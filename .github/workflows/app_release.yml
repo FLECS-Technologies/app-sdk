@@ -54,4 +54,5 @@ jobs:
       release-tag: ${{ inputs.release-tag }}
       app-version: ${{ inputs.app-version }}
     secrets:
-      APP_RELEASE_TOKEN: ${{ secrets.APP_RELEASE_TOKEN }}
+      FLECS_WORKFLOW_AUTOMATION_KEY: ${{ secrets.FLECS_WORKFLOW_AUTOMATION_KEY }}
+      FLECS_WORKFLOW_AUTOMATION_CLIENT_ID: ${{ secrets.FLECS_WORKFLOW_AUTOMATION_CLIENT_ID }}
