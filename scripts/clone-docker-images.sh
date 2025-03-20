@@ -1,6 +1,6 @@
 #!/bin/bash
 
-APP_MANIFEST="${BUILD_CONTEXT}/out/${APP}${SUFFIX}/${VERSION}/manifest.json"
+APP_MANIFEST="${BUILD_CONTEXT}/out/${APP}${SUFFIX}/${VERSION}/manifest.json.compose-merged"
 
 echo "Analyzing manifest ${APP_MANIFEST}"
 
@@ -18,11 +18,7 @@ while read IMAGE; do
     run docker pull ${IMAGE}
     # Remove the leading part until '/': some-registry.example.com/image:tag -> image:tag
     BASE_IMAGE=$(echo ${IMAGE} | sed -e 's#^[^/]*/##')
-    NEW_TAG="flecs.azurecr.io/"${BASE_IMAGE}
+    NEW_TAG="flecs.azurecr.io/${APP}${SUFFIX}/${BASE_IMAGE}"
     run docker tag ${IMAGE} ${NEW_TAG}
     run docker push ${NEW_TAG}
 done < <(cat "${APP_MANIFEST}" | jq -rc ".deployment.compose.services[].image")
-
-echo "Replacing images in App manifest"
-run cat "${APP_MANIFEST}" | jq -rc '.deployment.compose.services[].image |= sub("(^[^/]*/)"; "flecs.azurecr.io/")' >"${APP_MANIFEST}.cloned"
-run mv -f ${APP_MANIFEST}.cloned ${APP_MANIFEST}
