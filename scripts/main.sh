@@ -59,6 +59,7 @@ for VARIANT in "${VARIANTS[@]}"; do
   source ${DIRNAME}/scripts/build-app-manifest.sh
 
   if [ "${PUSH_DOCKER}" = "true" ]; then
+    source ${DIRNAME}/scripts/clone-docker-images.sh
     source ${DIRNAME}/scripts/push-docker-image.sh
   fi
 
