@@ -16,5 +16,5 @@ if [ -f "${BUILD_CONTEXT}/docker/docker-compose.yml" ]; then
     run jq ".deployment.compose |= . + ${COMPOSE_YAML}" "${APP_MANIFEST}" >${APP_MANIFEST}.compose-merged
 
     echo "Replacing images in App manifest"
-    run cat "${APP_MANIFEST}.compose-merged" | jq -rc '.deployment.compose.services[].image |= sub("(^[^/]*/)"; "flecs.azurecr.io/'"${APP}${SUFFIX}"'/")' >"${APP_MANIFEST}"
+    run cat "${APP_MANIFEST}.compose-merged" | jq '.deployment.compose.services[].image |= sub("(^[^/]*/)"; "flecs.azurecr.io/'"${APP}${SUFFIX}"'/")' >"${APP_MANIFEST}"
 fi
