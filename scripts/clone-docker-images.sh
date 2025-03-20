@@ -10,7 +10,7 @@ if [ "${HAS_COMPOSE}" != "true" ]; then
     echo "App is not a compose App -- skipping image cloning"
 fi
 
-IMAGES=$(cat ${APP_MANIFEST} | jq -rc ".deployment.compose.services[].image")
+IMAGES=$(cat ${APP_MANIFEST} | jq -rc ".deployment.compose.yaml.services[].image")
 
 run docker login --username ${DOCKER_USER} --password ${DOCKER_PASSWORD} flecs.azurecr.io >/dev/null
 
@@ -21,4 +21,4 @@ while read IMAGE; do
     NEW_TAG="flecs.azurecr.io/${APP}${SUFFIX}/${BASE_IMAGE}"
     run docker tag ${IMAGE} ${NEW_TAG}
     run docker push ${NEW_TAG}
-done < <(cat "${APP_MANIFEST}" | jq -rc ".deployment.compose.services[].image")
+done < <(cat "${APP_MANIFEST}" | jq -rc ".deployment.compose.yaml.services[].image")

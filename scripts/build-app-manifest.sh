@@ -13,8 +13,8 @@ run sed -i "s/##VERSION##/${VERSION}/g" "${APP_MANIFEST}"
 if [ -f "${BUILD_CONTEXT}/docker/docker-compose.yml" ]; then
     echo "Merging docker-compose.yml into manifest"
     COMPOSE_YAML=$(cat ${BUILD_CONTEXT}/docker/docker-compose.yml | yq -o json -M)
-    run jq ".deployment.compose |= . + ${COMPOSE_YAML}" "${APP_MANIFEST}" >${APP_MANIFEST}.compose-merged
+    run jq ".deployment.compose.yaml |= . + ${COMPOSE_YAML}" "${APP_MANIFEST}" >${APP_MANIFEST}.compose-merged
 
     echo "Replacing images in App manifest"
-    run cat "${APP_MANIFEST}.compose-merged" | jq '.deployment.compose.services[].image |= sub("(^[^/]*/)"; "flecs.azurecr.io/'"${APP}${SUFFIX}"'/")' >"${APP_MANIFEST}"
+    run cat "${APP_MANIFEST}.compose-merged" | jq '.deployment.compose.yaml.services[].image |= sub("(^[^/]*/)"; "flecs.azurecr.io/'"${APP}${SUFFIX}"'/")' >"${APP_MANIFEST}"
 fi
