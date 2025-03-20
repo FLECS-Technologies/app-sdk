@@ -10,7 +10,6 @@ print_usage() {
 
 parse_args() {
   local ARG_DOCKER_ONLY="false"
-  local ARG_IMAGE_ONLY="false"
   while [ ! -z "${1}" ]; do
     case ${1} in
       -a|--app)
@@ -32,9 +31,6 @@ parse_args() {
       -m|--manifest-only)
         local ARG_MANIFEST_ONLY="true"
         ;;
-      -i|--image-only)
-        local ARG_IMAGE_ONLY="true"
-        ;;
       -h|--help)
         print_usage
         exit 0
@@ -50,27 +46,15 @@ parse_args() {
   done
 
   BUILD_DOCKER="true"
-  BUILD_MANIFEST="true"
 
   if [ "${ARG_PUSH}" = "true" ]; then
     PUSH_DOCKER="true"
     PUSH_MANIFEST="true"
   fi
 
-  if [ "${ARG_MANIFEST_ONLY}" = "true" ] && [ "${ARG_IMAGE_ONLY}" = "true" ]; then
-    print_usage
-    echo "Error: Conflicting arguments --manifest-only and --image-only specified" 1>&2
-    exit 1
-  fi
-
   if [ "${ARG_MANIFEST_ONLY}" = "true" ]; then
     BUILD_DOCKER="false"
     PUSH_DOCKER="false"
-  fi
-
-  if [ "${ARG_IMAGE_ONLY}" = "true" ]; then
-    BUILD_MANIFEST="false"
-    PUSH_MANIFEST="false"
   fi
 
   if [ "${DEBUG}" = "true" ]; then
@@ -80,7 +64,6 @@ parse_args() {
     echo "  * ARG_VARIANT: ${ARG_VARIANT}" 1>&2
     echo "  * ARG_PUSH: ${ARG_PUSH}" 1>&2
     echo "  * ARG_MANIFEST_ONLY: ${ARG_MANIFEST_ONLY}" 1>&2
-    echo "  * ARG_IMAGE_ONLY: ${ARG_MANIFEST_ONLY}" 1>&2
     echo
   fi
 
@@ -110,7 +93,6 @@ if [ "${DEBUG}" = "true" ]; then
   echo "  * APP: ${APP}"
   echo "  * VERSION: ${VERSION}"
   echo "  * SINGLE_VARIANT: ${SINGLE_VARIANT}"
-  echo "  * BUILD_MANIFEST: ${BUILD_MANIFEST}"
   echo "  * BUILD_DOCKER: ${BUILD_DOCKER}"
   echo "  * PUSH_DOCKER: ${PUSH_DOCKER}"
   echo "  * PUSH_MANIFEST: ${PUSH_MANIFEST}"
