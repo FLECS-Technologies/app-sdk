@@ -22,6 +22,7 @@ def parse_args(argv):
     parser.add_argument("--app", required=True)
     parser.add_argument("--base-url", required=False, default="staging.flecs.tech")
     parser.add_argument("--allow-no-product", required=False, action='store_true')
+    parser.add_argument("--dry-run", required=False, action='store_true')
     args = parser.parse_args(argv)
     if args.app[-1] == "/":
         args.app = args.app[:-1]
@@ -230,16 +231,19 @@ def main(argv):
             )
             print("Updating product {id} @{url}".format(id=product_id, url=url))
             print(json.dumps(put_json, indent=2))
-            update_product = requests.put(
-                url=url,
-                headers={"User-Agent": "curl/8.4.0", "Content-Type": "application/json"},
-                auth=(
-                    os.environ.get("WC_CONSUMER_KEY"),
-                    os.environ.get("WC_CONSUMER_SECRET"),
-                ),
-                data=json.dumps(put_json),
-            )
-            print(update_product)
+            if args.dry_run:
+                print("Skipped updating {id} @{url}, due to dry-run".format(id=product_id, url=url))
+            else:
+                update_product = requests.put(
+                    url=url,
+                    headers={"User-Agent": "curl/8.4.0", "Content-Type": "application/json"},
+                    auth=(
+                        os.environ.get("WC_CONSUMER_KEY"),
+                        os.environ.get("WC_CONSUMER_SECRET"),
+                    ),
+                    data=json.dumps(put_json),
+                )
+                print(update_product)
     if no_products_found_counter > 0 and not args.allow_no_product:
         exit(no_products_found_counter + error_count)
     exit(error_count)
