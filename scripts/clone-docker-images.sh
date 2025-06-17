@@ -18,7 +18,10 @@ while read IMAGE; do
     # Parse part before '/': some-registry.example.com/image:tag -> some-registry.example.com
     REGISTRY_URL=$(echo ${IMAGE} | sed -nE 's#(.*)(/.+)$#\1#p')
     if [ -n "${PRIVATE_REGISTRY_USER}" ]; then
-        run docker login --username ${PRIVATE_REGISTRY_USER} --password ${PRIVATE_REGISTRY_PASSWORD} ${REGISTRY_URL}
+        docker login --username ${PRIVATE_REGISTRY_USER} --password ${PRIVATE_REGISTRY_PASSWORD} ${REGISTRY_URL}
+        if [ $? -ne 0 ]; then
+            echo "Warning: docker login failed for ${REGISTRY_URL} -- trying to continue without authentication"
+        fi
     fi
     run docker pull ${IMAGE}
     # Parse part after '/': some-registry.example.com/image:tag -> image:tag
