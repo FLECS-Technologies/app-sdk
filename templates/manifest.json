@@ -1,12 +1,18 @@
 {
-    "$schema": "https://raw.githubusercontent.com/FLECS-Technologies/app-sdk/main/manifest.schema.json",
-    "_schemaVersion": "2.0.0",
+    "$schema": "https://raw.githubusercontent.com/FLECS-Technologies/app-sdk/3.0.0/manifest.schema.json",
+    "_schemaVersion": "3.0.0",
     "app": "##APP##",
     "version": "##VERSION##",
     "revision": "0",
     "image": "flecs.azurecr.io/##APP##",
     "multiInstance": false,
-    "editor": "",
+    "editors": [
+        {
+            "name": "My UI",
+            "port": 6789,
+            "supportsReverseProxy": true
+        }
+    ],
     "args": [
         "--launch-arg-1",
         "--launch-arg-2=8000"
