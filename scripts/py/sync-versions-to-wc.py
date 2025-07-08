@@ -20,6 +20,7 @@ def parse_args(argv):
         description="Synchronize App versions and architectures to WooCommerce",
     )
     parser.add_argument("--app", required=True)
+    parser.add_argument("--app-version", required=False, default="")
     parser.add_argument("--base-url", required=False, default="staging.flecs.tech")
     parser.add_argument("--allow-no-product", required=False, action='store_true')
     parser.add_argument("--dry-run", required=False, action='store_true')
@@ -48,29 +49,47 @@ def variants_from_tag(tag: TagReference):
             variants.add(match.group(1))
     return variants
 
+
+def releases_from_tags(tags):
+    releases = dict()
+    for tag in tags:
+        print("Processing tag {}".format(tag))
+        variants = variants_from_tag(tag)
+
+        for variant in variants:
+            release = releases.setdefault(variant, AppRelease())
+            release.versions.add(tag.name)
+            try:
+                platforms = tag.repo.tree()["docker/Docker.{}.platforms".format(variant)]
+            except:
+                platforms = tag.repo.tree()["docker/Docker.platforms".format(variant)]
+            line = platforms.data_stream.read().decode().rstrip()
+            print("Processing line {}".format(line))
+            for raw_arch in line.split(","):
+                release.archs.add(docker_to_arch(raw_arch))
+            release.version_arch_matrix.add("{}:{}".format(tag, ",".join(sorted(release.archs))))
+    return releases
+
+
 def releases_from_repo(app):
     releases = dict()
     try:
         repo = Repo(app)
-        for tag in repo.tags:
-            print("Processing tag {}".format(tag))
-            variants = variants_from_tag(tag)
-
-            for variant in variants:
-                release = releases.setdefault(variant, AppRelease())
-                release.versions.add(tag.name)
-                try:
-                    platforms = tag.repo.tree()["docker/Docker.{}.platforms".format(variant)]
-                except:
-                    platforms = tag.repo.tree()["docker/Docker.platforms".format(variant)]
-                line = platforms.data_stream.read().decode().rstrip()
-                print("Processing line {}".format(line))
-                for raw_arch in line.split(","):
-                    release.archs.add(docker_to_arch(raw_arch))
-                release.version_arch_matrix.add("{}:{}".format(tag, ",".join(sorted(release.archs))))
+        releases = releases_from_tags(repo.tags)
     except Exception as e:
         print("Could not determine variants, versions and archs for {}: {}".format(app, e))
     return releases
+
+
+def release_from_repo(app, tag_name):
+    repo = Repo(app)
+    for existing_tag in repo.tags:
+        if existing_tag.name == tag_name:
+            tag = existing_tag
+            break
+    else:
+        raise Exception("Tag {tag_name} not found for app {app}".format(tag_name=tag_name, app=app))
+    return releases_from_tags([tag])
 
 
 def wc_apps(base_url):
@@ -138,7 +157,7 @@ def insert_attribute(attributes, name, id, options):
     return attributes
 
 
-def patch_attributes(attributes, archs, versions):
+def patch_attributes(attributes, archs, versions, replace):
     keys = ["archs", "versions"]
     ids = [4, 0]  # 4 is the ID of the global "archs" enum
     values = [archs, versions]
@@ -149,7 +168,13 @@ def patch_attributes(attributes, archs, versions):
             # Update attribute if it already exists
             elem = next(filter(lambda attr: attr["name"] == keys[i], attributes))
             elem["id"] = ids[i]
-            elem["options"] = values[i]
+            if replace:
+                elem["options"] = values[i]
+            else:
+                # Create one collection of new and old values with unique values
+                options = set(elem["options"] + values[i])
+                # Create sorted list of set
+                elem["options"] = natsorted(list(options))
         except StopIteration:
             # Insert otherwise
             attributes = insert_attribute(attributes, keys[i], ids[i], values[i])
@@ -160,6 +185,22 @@ def patch_attributes(attributes, archs, versions):
 def build_meta_data(version_arch_matrix):
     return [{"key": "flecs_version_arch_matrix", "value": version_arch_matrix}]
 
+def get_version_arch_matrix(meta_data):
+    try:
+        return next(filter(lambda meta: meta["key"] == "flecs_version_arch_matrix", meta_data))["value"]
+    except StopIteration:
+        return []
+
+def patch_meta_data(meta_data, new_version_arch_matrix, replace):
+    if replace:
+        version_arch_matrix = new_version_arch_matrix
+    else:
+        version_arch_matrix =  get_version_arch_matrix(meta_data)
+        # Create one collection of new and old values with unique values
+        version_arch_matrix = set(version_arch_matrix + new_version_arch_matrix)
+        # Create sorted list of set
+        version_arch_matrix = natsorted(list(version_arch_matrix))
+    return [{"key": "flecs_version_arch_matrix", "value": version_arch_matrix}]
 
 def main(argv):
     dotenv.load_dotenv()
@@ -179,7 +220,14 @@ def main(argv):
     print("Parsing variants, versions and architectures from Git repository...")
     no_products_found_counter = 0
     error_count = 0
-    releases = releases_from_repo(args.app)
+    replace_attributes = True
+    replace_meta_data = True
+    if args.app_version == "":
+        releases = releases_from_repo(args.app)
+    else:
+        releases = release_from_repo(args.app, args.app_version)
+        replace_attributes = False
+        replace_meta_data = False
     for variant, release in releases.items():
         release.archs = sorted(release.archs)
         release.versions = natsorted(release.versions)
@@ -222,8 +270,8 @@ def main(argv):
         # TODO: Should we really auto-update in white-labeled stores?
         for app in apps:
             product_id = app["id"]
-            app["attributes"] = patch_attributes(app["attributes"], release.archs, release.versions)
-            meta_data = build_meta_data(release.version_arch_matrix)
+            app["attributes"] = patch_attributes(app["attributes"], release.archs, release.versions, replace_attributes)
+            meta_data = patch_meta_data(app["meta_data"], release.version_arch_matrix, replace_meta_data)
             put_json = {"attributes": app["attributes"], "meta_data": meta_data}
 
             url = "https://{base_url}/wp-json/wc/v3/products/{id}".format(
