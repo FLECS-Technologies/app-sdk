@@ -65,6 +65,7 @@ def releases_from_tags(tags):
                 platforms = tag.repo.tree()["docker/Docker.platforms".format(variant)]
             line = platforms.data_stream.read().decode().rstrip()
             print("Processing line {}".format(line))
+            line = ''.join(line.split())
             for raw_arch in line.split(","):
                 release.archs.add(docker_to_arch(raw_arch))
             release.version_arch_matrix.add("{}:{}".format(tag, ",".join(sorted(release.archs))))
