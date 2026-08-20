@@ -8,9 +8,8 @@ HAS_COMPOSE=$(cat ${APP_MANIFEST} | jq -rc '.deployment | has ("compose")')
 
 if [ "${HAS_COMPOSE}" != "true" ]; then
     echo "App is not a compose App -- skipping image cloning"
+    return 0
 fi
-
-IMAGES=$(cat ${APP_MANIFEST} | jq -rc ".deployment.compose.yaml.services[].image")
 
 run docker login --username ${DOCKER_USER} --password ${DOCKER_PASSWORD} flecs.azurecr.io >/dev/null
 
@@ -23,12 +22,12 @@ while read IMAGE; do
             echo "Warning: docker login failed for ${REGISTRY_URL} -- trying to continue without authentication"
         fi
     fi
-    run docker pull ${IMAGE}
     # Parse part after '/': some-registry.example.com/image:tag -> image:tag
     BASE_IMAGE=$(echo ${IMAGE} | sed -e 's#^[^/]*/##')
     NEW_TAG="flecs.azurecr.io/${APP}${SUFFIX}/${BASE_IMAGE}"
-    run docker tag ${IMAGE} ${NEW_TAG}
-    run docker push ${NEW_TAG}
+    echo "Cloning ${IMAGE} to ${NEW_TAG}"
+    # Copies directly between registries and keeps all platforms
+    run docker buildx imagetools create --tag ${NEW_TAG} ${IMAGE}
     if [ -n "${PRIVATE_REGISTRY_USER}" ]; then
         run docker logout ${REGISTRY_URL}
     fi
