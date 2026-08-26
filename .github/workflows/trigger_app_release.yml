@@ -29,14 +29,14 @@ jobs:
           echo APP_NAME=$(echo "${{ github.repository }}" | sed -nE 's/.*apps-(.+)$/\1/p') >> $GITHUB_ENV
       - name: Issue GitHub App installation access token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.FLECS_WORKFLOW_AUTOMATION_CLIENT_ID }}
           private-key: ${{ secrets.FLECS_WORKFLOW_AUTOMATION_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: flecs-apps
       - name: Trigger App release workflow
-        uses: octokit/request-action@v2.x
+        uses: octokit/request-action@b91aabaa861c777dcdb14e2387e30eddf04619ae # v3.0.0
         with:
           route: POST /repos/{owner}/{repo}/actions/workflows/app_release.yml/dispatches
           owner: FLECS-Technologies
