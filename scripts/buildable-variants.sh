@@ -56,19 +56,30 @@ buildable() {
       ;;
   esac
 
-  # Private images need credentials to inspect.
+  # Skips a network call where the caller already knows the registry is private.
   if [ -n "${PRIVATE_REGISTRY:-}" ]; then
     echo "${label}: private registry in use" 1>&2
     return 0
   fi
 
-  if docker manifest inspect "${base}" >/dev/null 2>&1; then
+  if OUTPUT=$(docker manifest inspect "${base}" 2>&1); then
     echo "${label}: ${base} exists" 1>&2
     return 0
   fi
 
-  echo "${label}: ${base} does not exist" 1>&2
-  return 1
+  # Only a manifest-level error proves the tag is missing from a registry we
+  # can read. A repository-level error ("access denied", "repository does not
+  # exist or may require docker login") is what a private image returns without
+  # credentials, and is indistinguishable from a typo, so build instead.
+  case "${OUTPUT}" in
+    *"manifest unknown"*|*"MANIFEST_UNKNOWN"*|*"no such manifest"*)
+      echo "${label}: ${base} does not exist" 1>&2
+      return 1
+      ;;
+  esac
+
+  echo "${label}: could not check ${base}, building anyway: ${OUTPUT}" 1>&2
+  return 0
 }
 
 for MANIFEST in "${APP_DIR}"/manifest*.json; do
