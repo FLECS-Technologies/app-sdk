@@ -4,9 +4,11 @@ from git import Repo, TagReference
 from natsort import natsorted
 import os
 import json
+import random
 import re
 import requests
 import sys
+import time
 
 class AppRelease:
     def __init__(self):
@@ -203,6 +205,105 @@ def patch_meta_data(meta_data, new_version_arch_matrix, replace):
         version_arch_matrix = natsorted(list(version_arch_matrix))
     return [{"key": "flecs_version_arch_matrix", "value": version_arch_matrix}]
 
+# WooCommerce has no conditional writes, and an update replaces the whole
+# attributes and meta_data blob, so concurrent releases can drop each other's
+# versions. With --app-version the patch is a union, so re-reading and
+# re-applying converges.
+SYNC_ATTEMPTS = 5
+
+
+def wc_auth():
+    return (os.environ.get("WC_CONSUMER_KEY"), os.environ.get("WC_CONSUMER_SECRET"))
+
+
+def product_url(base_url, product_id):
+    return "https://{base_url}/wp-json/wc/v3/products/{id}".format(
+        base_url=base_url, id=product_id
+    )
+
+
+def get_product(base_url, product_id):
+    response = requests.get(
+        product_url(base_url, product_id),
+        headers={"User-Agent": "curl/8.4.0"},
+        auth=wc_auth(),
+    )
+    if not response.ok:
+        raise RuntimeError(
+            "GET product {id} returned {code}: {body}".format(
+                id=product_id, code=response.status_code, body=response.text[:200]
+            )
+        )
+    return response.json()
+
+
+def versions_of(product):
+    try:
+        elem = next(
+            filter(lambda attr: attr["name"] == "versions", product["attributes"])
+        )
+        return set(elem["options"])
+    except StopIteration:
+        return set()
+
+
+def sync_product(base_url, product_id, release, replace_attributes,
+                 replace_meta_data, dry_run):
+    """Write the release to a product. Returns True on success."""
+    want_versions = set(release.versions)
+    want_matrix = set(release.version_arch_matrix)
+
+    for attempt in range(1, SYNC_ATTEMPTS + 1):
+        product = get_product(base_url, product_id)
+        put_json = {
+            "attributes": patch_attributes(
+                product["attributes"], release.archs, release.versions,
+                replace_attributes
+            ),
+            "meta_data": patch_meta_data(
+                product["meta_data"], release.version_arch_matrix, replace_meta_data
+            ),
+        }
+
+        url = product_url(base_url, product_id)
+        print("Updating product {id} @{url} (attempt {n})".format(
+            id=product_id, url=url, n=attempt))
+        print(json.dumps(put_json, indent=2))
+
+        if dry_run:
+            print("Skipped updating {id} @{url}, due to dry-run".format(
+                id=product_id, url=url))
+            return True
+
+        response = requests.put(
+            url=url,
+            headers={"User-Agent": "curl/8.4.0", "Content-Type": "application/json"},
+            auth=wc_auth(),
+            data=json.dumps(put_json),
+        )
+        if not response.ok:
+            print("Updating product {id} returned {code}: {body}".format(
+                id=product_id, code=response.status_code, body=response.text[:200]),
+                file=sys.stderr)
+            return False
+
+        after = get_product(base_url, product_id)
+        missing = (want_versions - versions_of(after)) | (
+            want_matrix - set(get_version_arch_matrix(after["meta_data"]))
+        )
+        if not missing:
+            return True
+
+        print("Product {id} is missing {missing} after the write, "
+              "another release probably wrote at the same time; retrying".format(
+                  id=product_id, missing=natsorted(missing)), file=sys.stderr)
+        time.sleep(random.uniform(1.0, 3.0) * attempt)
+
+    print("Could not sync product {id} after {n} attempts".format(
+        id=product_id, n=SYNC_ATTEMPTS), file=sys.stderr)
+    return False
+
+
 def main(argv):
     dotenv.load_dotenv()
     REQUIRED_ENV_VARS = ["WC_CONSUMER_KEY", "WC_CONSUMER_SECRET"]
@@ -270,29 +371,11 @@ def main(argv):
         # Apply changes to all found Apps
         # TODO: Should we really auto-update in white-labeled stores?
         for app in apps:
-            product_id = app["id"]
-            app["attributes"] = patch_attributes(app["attributes"], release.archs, release.versions, replace_attributes)
-            meta_data = patch_meta_data(app["meta_data"], release.version_arch_matrix, replace_meta_data)
-            put_json = {"attributes": app["attributes"], "meta_data": meta_data}
-
-            url = "https://{base_url}/wp-json/wc/v3/products/{id}".format(
-                base_url=args.base_url, id=product_id
-            )
-            print("Updating product {id} @{url}".format(id=product_id, url=url))
-            print(json.dumps(put_json, indent=2))
-            if args.dry_run:
-                print("Skipped updating {id} @{url}, due to dry-run".format(id=product_id, url=url))
-            else:
-                update_product = requests.put(
-                    url=url,
-                    headers={"User-Agent": "curl/8.4.0", "Content-Type": "application/json"},
-                    auth=(
-                        os.environ.get("WC_CONSUMER_KEY"),
-                        os.environ.get("WC_CONSUMER_SECRET"),
-                    ),
-                    data=json.dumps(put_json),
-                )
-                print(update_product)
+            if not sync_product(
+                args.base_url, app["id"], release,
+                replace_attributes, replace_meta_data, args.dry_run
+            ):
+                error_count += 1
     if no_products_found_counter > 0 and not args.allow_no_product:
         exit(no_products_found_counter + error_count)
     exit(error_count)
