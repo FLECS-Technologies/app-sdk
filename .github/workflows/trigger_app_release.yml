@@ -38,7 +38,9 @@ jobs:
       - name: Trigger App release workflow
         uses: octokit/request-action@b91aabaa861c777dcdb14e2387e30eddf04619ae # v3.0.0
         with:
-          route: POST /repos/{owner}/{repo}/actions/workflows/app_release.yml/dispatches
+          # The dispatch API addresses a workflow by file name, so this
+          # has to stay in sync with the workflow name in flecs-apps.
+          route: POST /repos/{owner}/{repo}/actions/workflows/release-open-pr.yml/dispatches
           owner: FLECS-Technologies
           repo: flecs-apps
           data: >
